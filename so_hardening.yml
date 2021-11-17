@@ -1,0 +1,56 @@
+---
+- name: Playbook for hardening
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+
+    - name: Update all packages
+      yum:
+        name: '*'
+        state: latest
+      tags:
+        - update
+
+    - name: Change file sysctl.conf
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+        reload: yes
+      loop:
+        - { name: 'net.ipv4.conf.all.accept_redirects', value: '0' }
+        - { name: 'net.ipv4.conf.default.accept_redirects', value: '0' }
+        - { name: 'net.ipv4.conf.all.secure_redirects', value: '0' }
+        - { name: 'net.ipv4.conf.default.secure_redirects', value: '0' }
+        - { name: 'net.ipv4.conf.all.send_redirects', value: '0' }
+        - { name: 'net.ipv4.conf.default.send_redirects', value: '0' }
+        # If not correct connection name, change it or make it dynamic
+        - { name: 'net.ipv4.conf.ens192.send_redirects', value: '0' }
+
+    - name: Add a KexAlgorithms to ssh_conf
+      lineinfile:
+        path: /etc/ssh/ssh_config
+        line:  KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha1
+        create: yes
+
+    - name: Add a kexalgorithms to sshd_con
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        line: kexalgorithms curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256,diffie-hellman-group14-sha1
+        create: yes
+
+    - name: Set umask to 0077
+      lineinfile:
+        path: "{{ item.path }}"
+        state: present
+        backrefs: true
+        regexp: '^(\s*)UMASK(\s+)\d+'
+        line: '\1UMASK           0077'
+      loop:
+        - {path: '/etc/login.defs'}
+
+    - name: Create the umask.sh file
+      copy:
+        content: 'umask 0077'
+        dest: /etc/profile.d/umask.sh
