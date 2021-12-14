@@ -1,0 +1,15 @@
+- name: Update colors in bash prompt
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+
+    #First update the file bash_prompt_tuning.sh with the correct domain
+    - name: Copy file bash_prompt_tuning.sh into profile.d
+      copy:
+        src: files/bash_prompt_tuning.sh
+        dest: /etc/profile.d/bash_prompt_tuning.sh
+        owner: root
+        group: root
+        mode: '0644'
+
