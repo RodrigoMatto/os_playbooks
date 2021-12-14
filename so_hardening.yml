@@ -1,16 +1,37 @@
 ---
 - name: Playbook for hardening
   hosts: all
-  gather_facts: false
+  gather_facts: true
   become: true
+  vars:
+    crypto_policies_policy: DEFAULT:NO-SHA1
+  roles:
+    #First install package rhel-system-roles
+    - redhat.rhel_system_roles.crypto_policies
   tasks:
+    - name: Show reboot is needed
+      debug:
+        msg: "Reboot is needed to apply changes"
+      when: crypto_policies_reboot_required | d(false)
 
-    - name: Update all packages
-      yum:
-        name: '*'
-        state: latest
-      tags:
-        - update
+    - name: Delete KexAlgorithms in ssh_conf
+      lineinfile:
+        path: /etc/ssh/ssh_config
+        regex:  '^KexAlgorithms'
+        state: absent
+
+    - name: Delete kexalgorithms in sshd_conf
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regex: '^kexalgorithms'
+        state: absent
+
+#    - name: Update all packages
+#      yum:
+#        name: '*'
+#        state: latest
+#      tags:
+#        - update
 
     - name: Change file sysctl.conf
       sysctl:
@@ -27,18 +48,6 @@
         - { name: 'net.ipv4.conf.default.send_redirects', value: '0' }
         # If not correct connection name, change it or make it dynamic
         - { name: 'net.ipv4.conf.ens192.send_redirects', value: '0' }
-
-    - name: Add a KexAlgorithms to ssh_conf
-      lineinfile:
-        path: /etc/ssh/ssh_config
-        line:  KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha1
-        create: yes
-
-    - name: Add a kexalgorithms to sshd_con
-      lineinfile:
-        path: /etc/ssh/sshd_config
-        line: kexalgorithms curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256,diffie-hellman-group14-sha1
-        create: yes
 
     - name: Set umask to 0077
       lineinfile:
