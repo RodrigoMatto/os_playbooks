@@ -6,7 +6,7 @@
 #    Use -e when running ansible-playbook to set this variable
 #    user: ""
   become: true
-  serial: 1
+#  serial: 1
   tasks:
 
     - name: change file sysctl.conf
