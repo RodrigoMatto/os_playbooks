@@ -24,6 +24,11 @@
         - { name: 'net.core.wmem_max', value: '2621440' }
         - { name: 'net.core.somaxconn', value: '10000' }
         - { name: 'vm.swappiness', value: '0' }
+        # https://askubuntu.com/questions/1472428/why-i-got-failed-to-allocate-directory-watch-too-many-open-files
+        # fs.inotify
+        - { name: 'fs.inotify.max_user_instances', value: '1024'}
+        - { name: 'fs.inotify.max_queued_events', value: '32768'}
+        - { name: 'fs.inotify.max_user_watches', value: '24440'}
 
     - name: change value limits.conf
       pam_limits:
